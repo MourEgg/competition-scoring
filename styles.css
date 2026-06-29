@@ -1,0 +1,17 @@
+.buttons-wrapper {
+    display: flex;
+    width: 100%;
+    flex-direction: column
+}
+
+#counterButton {
+    height: 100vh;
+    margin-bottom: 50px;
+    font-size: 250px;
+    font-weight: 700;
+}
+
+#resetButton {
+    padding: 40px;
+    font-size: 32px;
+}
