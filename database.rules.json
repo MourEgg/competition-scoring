@@ -1,0 +1,44 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": false,
+
+    "live": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email_verified === true && auth.token.email === 'kubakristan@gmail.com'"
+    },
+
+    "contestants": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email_verified === true && auth.token.email === 'kubakristan@gmail.com'"
+    },
+
+    "judges": {
+      ".read": "auth != null && auth.token.email_verified === true",
+      ".write": "auth != null && auth.token.email_verified === true && auth.token.email === 'kubakristan@gmail.com'"
+    },
+
+    "config": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email_verified === true && auth.token.email === 'kubakristan@gmail.com'"
+    },
+
+    "scores": {
+      ".read": true,
+      ".write": true,
+      "$contestantId": {
+        ".read": true,
+        ".write": true,
+        "$roundId": {
+          ".read": true,
+          ".write": true,
+          "$judgeId": {
+            ".read": true,
+            ".write": "root.child('judges').child($judgeId).exists() || (auth != null && auth.token.email_verified === true && auth.token.email === 'kubakristan@gmail.com')",
+            ".validate": "newData.exists() ? ((newData.child('points').isNumber() || !newData.hasChild('points')) && (newData.child('overallFeel').isNumber() || !newData.hasChild('overallFeel'))) : true"
+          }
+        }
+      }
+    }
+  }
+}

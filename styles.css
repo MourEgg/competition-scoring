@@ -1,17 +1,95 @@
 .buttons-wrapper {
     display: flex;
     width: 100%;
-    flex-direction: column
+    flex-direction: column;
+}
+
+.buttons-wrapper-bottom {
+    display: flex;
+    flex-direction: column;
+    margin: 0 50px;
 }
 
 #counterButton {
     height: 100vh;
     margin-bottom: 50px;
-    font-size: 250px;
+    font-size: 70px;
     font-weight: 700;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+#counterButton.btn-danger {
+    pointer-events: none;
+}
+
+#button-timer {
+    font-size: 40px;
 }
 
 #resetButton {
-    padding: 40px;
-    font-size: 32px;
+    padding: 20px;
+    font-size: 24px;
+}
+
+.input-wrapper {
+    margin-top: 30px;
+
+    input {
+        font-size: 32px;
+        width: 100%;
+    }
+}
+
+.page-wrapper {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding: 30px 15px;
+    min-height: 100vh;
+
+    h2 {
+        margin-top: 50px;
+    }
+}
+
+.timer-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.contestants-wrapper {
+    width: 100%;
+    margin-top: 30px;
+}
+
+.contestants-wrapper table {
+    width: 100%;
+    div {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+.add-contestant {
+    display: flex;
+    column-gap: 10px;
+
+    input {
+        width: auto;
+    }
+}
+
+.edit-row {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    column-gap: 5px;
+
+    span {
+        flex-shrink: 0;
+    }
 }
