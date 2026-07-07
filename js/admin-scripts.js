@@ -358,7 +358,7 @@ function renderJudges(judges) {
     tbody.innerHTML = '';
     judges.forEach(j => {
         const tr = document.createElement('tr');
-        const inviteUrl = `${location.origin}${location.pathname.replace(/admin.html$/, 'index.html') || '/index.html'}?judgeId=${encodeURIComponent(j.id)}`;
+        const inviteUrl = `${location.origin}${location.pathname.replace('admin', 'index') || '/index'}?judgeId=${encodeURIComponent(j.id)}`;
         tr.innerHTML = `
             <td>${j.name}</td>
             <td>
