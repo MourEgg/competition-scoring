@@ -17,7 +17,8 @@ import {
     GoogleAuthProvider,
     signInWithPopup,
     signOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+    signInAnonymously
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
 // Your web app's Firebase configuration
@@ -87,6 +88,10 @@ function getFriendlyAuthError(error) {
         return "Only the configured admin Google account can access this panel.";
     }
 
+    if (error?.code === "auth/admin-restricted-operation" || error?.code === "auth/operation-not-allowed") {
+        return "Anonymous sign-in is not enabled for this Firebase project. Open Firebase Console → Authentication → Sign-in method and turn on Anonymous.";
+    }
+
     return error?.message || "Google sign-in failed.";
 }
 
@@ -105,6 +110,20 @@ export function getAuthState() {
 
 export async function signInWithGoogle() {
     try {
+        if (auth.currentUser?.isAnonymous) {
+            await signOut(auth);
+        }
+
+        if (auth.currentUser && !auth.currentUser.isAnonymous) {
+            const isAdmin = isAllowedAdmin(auth.currentUser.email);
+            if (isAdmin) {
+                emitAuthState({ user: auth.currentUser, isAdmin: true, loading: false, error: null });
+                return { user: auth.currentUser, isAdmin: true };
+            }
+
+            await signOut(auth);
+        }
+
         const result = await signInWithPopup(auth, googleProvider);
         const user = result.user;
         const isAdmin = isAllowedAdmin(user?.email);
@@ -118,6 +137,26 @@ export async function signInWithGoogle() {
 
         emitAuthState({ user, isAdmin: true, loading: false, error: null });
         return { user, isAdmin: true };
+    }
+    catch (error) {
+        const friendlyMessage = getFriendlyAuthError(error);
+        const wrappedError = new Error(friendlyMessage);
+        wrappedError.code = error?.code || "AUTH_ERROR";
+        wrappedError.originalError = error;
+        throw wrappedError;
+    }
+}
+
+export async function ensureAnonymousAuth() {
+    try {
+        await auth.authStateReady();
+
+        if (auth.currentUser) {
+            return auth.currentUser;
+        }
+
+        const result = await signInAnonymously(auth);
+        return result.user;
     }
     catch (error) {
         const friendlyMessage = getFriendlyAuthError(error);

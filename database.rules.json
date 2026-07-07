@@ -14,8 +14,16 @@
     },
 
     "judges": {
-      ".read": "auth != null && auth.token.email_verified === true",
+      ".read": "auth != null",
       ".write": "auth != null && auth.token.email_verified === true && auth.token.email === 'kubakristan@gmail.com'"
+    },
+
+    "judgeSessions": {
+      ".read": "auth != null && (auth.token.email_verified === true || auth.uid != null)",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid && newData.child('judgeId').isString() && newData.child('judgeId').val().length > 0",
+        ".validate": "newData.hasChildren(['judgeId', 'createdAt'])"
+      }
     },
 
     "config": {
@@ -34,7 +42,7 @@
           ".write": true,
           "$judgeId": {
             ".read": true,
-            ".write": "root.child('judges').child($judgeId).exists() || (auth != null && auth.token.email_verified === true && auth.token.email === 'kubakristan@gmail.com')",
+            ".write": "(auth != null && root.child('judgeSessions').child(auth.uid).child('judgeId').val() === $judgeId) || (auth != null && auth.token.email_verified === true && auth.token.email === 'kubakristan@gmail.com') || (auth != null && root.child('judges').child($judgeId).child('name').val().toLowerCase() === 'admin')",
             ".validate": "newData.exists() ? ((newData.child('points').isNumber() || !newData.hasChild('points')) && (newData.child('overallFeel').isNumber() || !newData.hasChild('overallFeel'))) : true"
           }
         }

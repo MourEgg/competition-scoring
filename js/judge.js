@@ -1,5 +1,6 @@
 import { listenLiveState, submitScore, startRound, resetRound, getTimerDuration, watchSubmissionCount, tryAutoAdvance, getJudges, beginRound, hasJudgeSubmitted, validateJudgeToken } from "./database.js";
 import { getContestants } from "./database.js";
+import { ensureAnonymousAuth, auth } from "./firebase.js";
 
 /**
  * Judge screen main state
@@ -11,6 +12,8 @@ let judgeId = null;
 let judgeToken = null;
 let judgeValidated = false;
 let isAdmin = false;
+let authErrorMessage = "";
+let adminJudgeId = null;
 
 /**
  * Counter (local interaction only)
@@ -27,6 +30,16 @@ let submissionUnsubscribe = null;
 function getScoreDraftKey() {
     if (!judgeId || !currentLive?.currentRound) return null;
     return `scoreDraft:${judgeId}:${currentLive.currentRound}`;
+}
+
+function showJudgeAuthMessage(message) {
+    authErrorMessage = message || "";
+
+    const authMessageEl = document.getElementById("judgeAuthMessage");
+    if (!authMessageEl) return;
+
+    authMessageEl.textContent = authErrorMessage;
+    authMessageEl.style.display = authErrorMessage ? "block" : "none";
 }
 
 function saveScoreDraft() {
@@ -123,11 +136,28 @@ async function init() {
 
     judgeId = getJudgeId();
     judgeToken = getJudgeToken();
-    isAdmin = getIsAdmin();
+    isAdmin = getIsAdmin() || isSignedInAdminUser();
 
-    if (judgeId && judgeToken) {
-        judgeValidated = await validateJudgeToken(judgeId, judgeToken);
+    if (judgeId) {
+        try {
+            await ensureAnonymousAuth();
+            judgeValidated = await validateJudgeToken(judgeId, judgeToken || null);
+            if (judgeValidated) {
+                showJudgeAuthMessage("");
+            }
+            else {
+                showJudgeAuthMessage("This judge link could not be verified. Please ask the event admin for a fresh link.");
+            }
+        }
+        catch (err) {
+            console.error("Judge auth failed", err);
+            judgeValidated = false;
+            showJudgeAuthMessage(err?.message || "Judge sign-in could not be completed.");
+        }
     }
+
+    adminJudgeId = await getAdminJudgeId();
+    isAdmin = isAdmin || (judgeId && adminJudgeId && String(judgeId) === String(adminJudgeId));
 
     contestantsCache = await getContestants();
 
@@ -155,6 +185,21 @@ function getJudgeToken() {
  */
 function getIsAdmin() {
     return new URLSearchParams(window.location.search).get("admin") === "1";
+}
+
+function isSignedInAdminUser() {
+    if (!auth?.currentUser) return false;
+    return auth.currentUser.email === "kubakristan@gmail.com";
+}
+
+async function getAdminJudgeId() {
+    const judges = await getJudges();
+    const adminJudge = judges.find((judge) => {
+        const name = String(judge?.name || "").trim().toLowerCase();
+        return name === "admin" || name === "judge admin" || name === "admin judge";
+    });
+
+    return adminJudge?.id || null;
 }
 
 /**
@@ -319,7 +364,9 @@ async function handleReset() {
 async function handleSubmitScore() {
 
     if (!currentLive || !judgeId || !judgeValidated) {
-        alert("Invalid judge credentials. Cannot submit score.");
+        const message = "Judge authentication is not ready. Please refresh the page and make sure Anonymous sign-in is enabled in Firebase Authentication.";
+        showJudgeAuthMessage(message);
+        alert(message);
         return;
     }
 

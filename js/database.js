@@ -1,4 +1,4 @@
-import { db } from "./firebase.js";
+import { db, auth } from "./firebase.js";
 import {
     ref,
     get,
@@ -10,7 +10,8 @@ import {
 const PATHS = {
     contestants: "contestants",
     config: "config",
-    live: "live"
+    live: "live",
+    judgeSessions: "judgeSessions"
 };
 
 // judges collection
@@ -442,10 +443,26 @@ export async function getJudgeById(judgeId) {
     return snap.exists() ? snap.val() : null;
 }
 
-export async function validateJudgeToken(judgeId, token) {
-    if (!judgeId || !token) return false;
+export async function validateJudgeToken(judgeId, token = null) {
+    if (!judgeId) return false;
+
     const judge = await getJudgeById(judgeId);
-    return judge?.inviteToken === token;
+    if (!judge) return false;
+
+    if (token && judge.inviteToken !== token) {
+        return false;
+    }
+
+    const activeUid = auth?.currentUser?.uid;
+    if (!activeUid) return false;
+
+    await set(ref(db, `${PATHS.judgeSessions}/${activeUid}`), {
+        judgeId,
+        createdAt: Date.now(),
+        inviteToken: token ?? null
+    });
+
+    return true;
 }
 
 export async function deleteJudge(id) {
