@@ -12,7 +12,6 @@
 
 #counterButton {
     height: 100vh;
-    margin-bottom: 50px;
     font-size: 70px;
     font-weight: 700;
     display: flex;
@@ -30,6 +29,7 @@
 
 #resetButton {
     padding: 20px;
+    margin-top: 50px;
     font-size: 24px;
 }
 

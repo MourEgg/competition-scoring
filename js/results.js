@@ -10,7 +10,8 @@ export function calculateNormalizedResults({ contestants = [], judges = [], scor
         .map((judge) => {
             const rawScores = contestantEntries
                 .map((contestant) => {
-                    const rawValue = Number(scoresByContestant?.[contestant.id]?.[String(judge.id)]?.points);
+                    const score = scoresByContestant?.[contestant.id]?.[String(judge.id)];
+                    const rawValue = Number(score?.points ?? 0) + Number(score?.overallFeel ?? 0);
                     return Number.isFinite(rawValue)
                         ? { contestantId: contestant.id, rawValue }
                         : null;
