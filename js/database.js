@@ -367,30 +367,46 @@ export async function deleteJudgeScore(contestantId, roundId, judgeId) {
     await set(ref(db, `scores/${contestantId}/${roundId}/${judgeId}`), null);
 }
 
-export async function tryAutoAdvance(contestantId, roundId) {
-    const judges = await getJudges();
-    const expected = judges.length;
-    if (!expected || expected <= 0) return;
+async function advanceToNextContestant() {
 
-    const count = await countSubmissions(contestantId, roundId);
-
-    if (count < expected) return;
-
-    // advance to next contestant without starting the timer
     const contestantsSnap = await get(ref(db, PATHS.contestants));
     if (!contestantsSnap.exists()) return;
 
     const contestantsObj = contestantsSnap.val();
-    const ids = Object.keys(contestantsObj).sort((a,b) => Number(a) - Number(b));
+    const ids = Object.keys(contestantsObj).sort((a, b) => Number(a) - Number(b));
+
+    if (ids.length === 0) return;
 
     const live = await getLiveState();
     const currentId = String(live?.currentContestant ?? ids[0]);
 
     const idx = ids.indexOf(currentId);
-    const nextIdx = (idx + 1) % ids.length;
-    const nextId = ids[nextIdx];
 
-    await prepareRound(nextId);
+    if (idx === -1) return;
+
+    if (idx >= ids.length - 1) {
+        return;
+    }
+
+    await prepareRound(ids[idx + 1]);
+}
+
+export async function tryAutoAdvance(contestantId, roundId) {
+
+    const judges = await getJudges();
+    const expected = judges.length;
+
+    if (!expected) return;
+
+    const count = await countSubmissions(contestantId, roundId);
+
+    if (count < expected) return;
+
+    await advanceToNextContestant();
+}
+
+export async function skipCurrentContestant() {
+    await advanceToNextContestant();
 }
 
 export function watchSubmissionCount(contestantId, roundId, callback) {

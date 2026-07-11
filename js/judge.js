@@ -1,4 +1,17 @@
-import { listenLiveState, submitScore, startRound, resetRound, getTimerDuration, watchSubmissionCount, tryAutoAdvance, getJudges, beginRound, hasJudgeSubmitted, validateJudgeToken } from "./database.js";
+import {
+    listenLiveState,
+    submitScore,
+    startRound,
+    resetRound,
+    getTimerDuration,
+    watchSubmissionCount,
+    tryAutoAdvance,
+    skipCurrentContestant,
+    getJudges,
+    beginRound,
+    hasJudgeSubmitted,
+    validateJudgeToken
+} from "./database.js";
 import { getContestants } from "./database.js";
 import { ensureAnonymousAuth, auth } from "./firebase.js";
 
@@ -208,14 +221,18 @@ async function getAdminJudgeId() {
 function setupUI() {
 
     const resetBtn = document.getElementById("resetButton");
+    const skipRoundBtn = document.getElementById("skipRoundButton");
 
     if (!isAdmin && resetBtn) {
         resetBtn.style.display = "none";
+        skipRoundBtn.style.display = "none";
     }
 
     if (resetBtn) {
         resetBtn.addEventListener("click", handleResetButtonClick);
         resetBtn.textContent = "Reset";
+
+        skipRoundBtn.addEventListener("click", handleSkipRoundButtonClick);
     }
 
     document
@@ -340,6 +357,14 @@ async function handleResetButtonClick(event) {
     await handleReset();
 }
 
+async function handleSkipRoundButtonClick(event) {
+    event.preventDefault();
+
+    if (!isAdmin) return;
+
+    await handleSkipRound();
+}
+
 /**
  * Reset logic (admin only)
  */
@@ -355,6 +380,19 @@ async function handleReset() {
 
     await resetRound();
     await showConfiguredDuration();
+}
+
+async function handleSkipRound() {
+
+    if (!isAdmin) return;
+
+    if (!confirm("Skip current contestant?")) {
+        return;
+    }
+
+    clearTimer();
+
+    await skipCurrentContestant();
 }
 
 
@@ -435,7 +473,7 @@ function startTimer(startTime, durationSec) {
     }
 
     update();
-    timerInterval = setInterval(update, 200);
+    timerInterval = setInterval(update, 100);
 }
 
 /**
